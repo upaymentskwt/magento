@@ -124,6 +124,7 @@ class Api
         $gatewayUrl = $apiUrl. ltrim($endpoint,'/');
         $client = $this->clientFactory->create();
         $client->setHeaders($headers);
+		$client->setOption(CURLOPT_USERAGENT, $this->getUserAgent($isLive));
 
         if(strtoupper($type) == "POST"){
             $client->post($gatewayUrl, $this->json->serialize($params));
@@ -182,4 +183,13 @@ class Api
     {
         return $this->sendRequest(self::REVOKE_CARD_ENDPOINT, 'POST', ['token' => $token]);
     }
+
+	public function getUserAgent($isLive)
+	{
+		$userAgent = 'SandboxUpaymentsMagentoPlugin/3.3.6';
+		if ($isLive) {
+			$userAgent = 'UpaymentsMagentoPlugin/3.3.6';
+		}
+		return $userAgent;
+	}
 }

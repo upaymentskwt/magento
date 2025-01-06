@@ -1,7 +1,7 @@
 # UPayments - Magento
 
 The Official Magento2 plugin for UPayments
-Pulgin version - 3.3.4
+Pulgin version - 3.3.6
 
 ---
 
@@ -71,3 +71,6 @@ default plugin
 
 --3.3.4
 Email Issue Fixed
+
+--3.3.6
+User Agent Added

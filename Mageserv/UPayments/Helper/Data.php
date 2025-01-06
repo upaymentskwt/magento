@@ -78,7 +78,10 @@ class Data extends AbstractHelper
     {
         return $this->scopeConfig->getValue($field);
     }
-
+    public function getOrderPendingStatus()
+    {
+        return $this->getConfigData("payment/upayments/order_status");
+    }
     public function generateCustomerUid($email = null)
     {
         if (!$email)
