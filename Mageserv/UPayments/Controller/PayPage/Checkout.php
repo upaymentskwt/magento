@@ -12,12 +12,18 @@ namespace Mageserv\UPayments\Controller\PayPage;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
+use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Message\ManagerInterface;
+use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Mageserv\UPayments\Gateway\Http\Client\Api;
 use Mageserv\UPayments\Helper\Data;
 use Magento\Sales\Model\OrderFactory;
-abstract class Checkout extends Action
+use Psr\Log\LoggerInterface;
+
+abstract class Checkout extends Action implements CsrfAwareActionInterface
 {
     protected $orderRepository;
     protected $checkoutSession;
@@ -25,6 +31,8 @@ abstract class Checkout extends Action
     protected $helper;
     protected $orderFactory;
     protected $api;
+    protected $logger;
+    protected $json;
     public function __construct(
         Context $context,
         OrderRepositoryInterface $orderRepository,
@@ -32,7 +40,9 @@ abstract class Checkout extends Action
         Session $checkoutSession,
         ManagerInterface $messageManager,
         Data $helper,
-        Api $api
+        Api $api,
+        LoggerInterface $logger,
+        Json $json
     )
     {
         parent::__construct($context);
@@ -42,6 +52,8 @@ abstract class Checkout extends Action
         $this->helper = $helper;
         $this->orderFactory = $orderFactory;
         $this->api = $api;
+        $this->logger = $logger;
+        $this->json = $json;
     }
 
     public function failAndRestoreQuote($message = null)
@@ -57,8 +69,6 @@ abstract class Checkout extends Action
                 $order = $this->orderFactory->create()->loadByIncrementId($params['order_id']);
                 $this->helper->cancelOrder($order, $message);
             }
-        } finally {
-
         }
         if($this->checkoutSession->restoreQuote()){
             if(!$message)
@@ -68,5 +78,14 @@ abstract class Checkout extends Action
             );
         }
         return $this->_redirect('checkout/cart');
+    }
+    public function createCsrfValidationException(RequestInterface $request): ?InvalidRequestException
+    {
+        return null;
+    }
+
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return true;
     }
 }

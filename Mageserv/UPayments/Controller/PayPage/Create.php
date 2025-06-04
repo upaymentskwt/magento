@@ -72,6 +72,7 @@ class Create extends Action
      */
     public function execute()
     {
+        $startTime = microtime(true);
         $result = $this->jsonResultFactory->create();
 
         // Get the params that were passed from our Router
@@ -87,6 +88,7 @@ class Create extends Action
         }
 
         // Create PayPage
+        /** @var \Magento\Sales\Model\Order $order */
         $order = $this->getOrder();
         if (!$order) {
             $this->_logger->critical("UPayments::Order is missing!, Quote [{$quoteId}]");
@@ -99,6 +101,7 @@ class Create extends Action
         }
         $order->setStatus("pending_payment");
         $order->setState("pending_payment");
+        $order->setCanSendNewEmailFlag(false);
         $order->save();
 
         try{
@@ -147,6 +150,14 @@ class Create extends Action
         }*/
 
         $result->setData($paypage);
+        $endTime = microtime(true);
+        $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/upayments_time.log');
+        $logger = new \Zend_Log();
+        $logger->addWriter($writer);
+        $logger->info(print_r([
+            'service' => 'create payment link',
+            'observer_time' => $endTime - $startTime,
+        ], true));
         return $result;
     }
 
