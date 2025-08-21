@@ -32,7 +32,7 @@ class Adapter
     {
         if(stripos($method->getCode(), 'upayments_') === 0){
             $configValue = $proceed($field, $storeId);
-            if(!$configValue)
+            if(!$configValue || $field == "active" || $field == "order_status")
                 $configValue =  $this->scopeConfig->getValue(
                     'payment/upayments/' . $field,
                     ScopeInterface::SCOPE_STORES,

@@ -384,4 +384,10 @@
                 disabled="false"
                 />
     </type>
+    <type name="Magento\Sales\Model\Order">
+        <plugin name="stop_email_on_place" type="Mageserv\UPayments\Plugin\Order" />
+    </type>
+    <type name="Magento\Sales\Model\Order\Email\Sender\OrderSender">
+        <plugin name="stop_email_on_place_email_sender" type="Mageserv\UPayments\Plugin\Email\Sender\OrderSender" />
+    </type>
 </config>

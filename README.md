@@ -1,6 +1,6 @@
 # UPayments - Magento
 
-The Official Magento2 plugin for UPayments Pulgin version - 3.3.3
+The Official Magento2 plugin for UPayments Pulgin version - 3.3.7
 
 ---
 
@@ -65,4 +65,10 @@ To Disable/Enable the module:
 
 Done
 
---3.3.3 ddefault plugin
+--3.3.3 default plugin
+
+--3.3.4 Email Issue Fixed
+
+--3.3.6 User Agent Added
+
+--3.3.7 Send Email after order - Issue Fixed

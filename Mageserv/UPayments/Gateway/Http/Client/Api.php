@@ -20,6 +20,8 @@ use Mageserv\UPayments\Model\Ui\ConfigProvider;
 use Mageserv\UPayments\Model\Ui\StatusEnum;
 use Psr\Log\LoggerInterface;
 use \StdClass;
+use Magento\Framework\App\CacheInterface;
+
 class Api
 {
     const API_STATING_URL = "https://sandboxapi.upayments.com/api/v1/";
@@ -39,12 +41,15 @@ class Api
     /** @var \Magento\Framework\HTTP\Client\Curl */
     protected $clientFactory;
     protected $helper;
+    private $cache;
+
     public function __construct(
-        PaymentHelper $paymentHelper,
-        Json $json,
-        LoggerInterface $logger,
-        CurlFactory $clientFactory,
-        BuilderInterface $requestBuilder
+        PaymentHelper    $paymentHelper,
+        Json             $json,
+        LoggerInterface  $logger,
+        CurlFactory      $clientFactory,
+        BuilderInterface $requestBuilder,
+        CacheInterface   $cache
     )
     {
         $this->paymentHelper = $paymentHelper;
@@ -52,6 +57,7 @@ class Api
         $this->logger = $logger;
         $this->clientFactory = $clientFactory;
         $this->requestBuilder = $requestBuilder;
+        $this->cache = $cache;
     }
 
     /**
@@ -68,14 +74,14 @@ class Api
             'order' => $order
         ]);
         $result = $this->json->unserialize($this->sendRequest(self::CHARGE_ENDPOINT, 'POST', $request));
-        if(!empty($result['status'])){
+        if (!empty($result['status'])) {
             $response->success = $result['status'];
             $response->message = $result['message'] ?? "";
-            if(!empty($result['data']) && !empty($result['data']['link']))
+            if (!empty($result['data']) && !empty($result['data']['link']))
                 $response->link = str_replace("http://", "https://", $result['data']['link']);
-            if(!empty($result['data']) && !empty($result['data']['trackId']))
+            if (!empty($result['data']) && !empty($result['data']['trackId']))
                 $response->track_id = $result['data']['trackId'];
-        }else{
+        } else {
             $response->message = $result['message'];
         }
         return $response;
@@ -87,12 +93,16 @@ class Api
         $resp = $this->json->unserialize($this->sendRequest($endpoint, 'GET'));
         return !empty($resp['status']) && !empty($resp['data']) && !empty($resp['data']['transaction']) && strtoupper($resp['data']['transaction']['result']) == StatusEnum::CAPTURED;
     }
-    public function createCustomerToken($uid){
+
+    public function createCustomerToken($uid)
+    {
         $this->sendRequest('create-customer-unique-token', 'POST', [
             'customerUniqueToken' => $uid
         ]);
     }
-    public function fetchCards($uid){
+
+    public function fetchCards($uid)
+    {
         $params = [
             'customerUniqueToken' => $uid
         ];
@@ -103,83 +113,124 @@ class Api
                 $params
             )
         );
-        if(!empty($resp['data']) && !empty($resp['data']['customerCards']))
+        if (!empty($resp['data']) && !empty($resp['data']['customerCards']))
             return $resp['data']['customerCards'];
         return [];
     }
+
     public function sendRequest($endpoint, $type = "POST", $params = [])
     {
+        $methodStartTime = microtime(true);
         $token = $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_token");
-        if(!$token)
+        if (!$token)
             throw new LocalizedException(__("UPayments module is not setup correctly, Please add your token!"));
 
-        $isLive =  $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("enable_live_mode");
-        $apiUrl =  $isLive ? self::API_LIVE_URL : self::API_STATING_URL;
+        $isLive = $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("enable_live_mode");
+        $apiUrl = $isLive ? self::API_LIVE_URL : self::API_STATING_URL;
 
         $headers = [
             'Content-Type' => 'application/json',
             "Authorization" => "Bearer {$token}",
             "Accept" => "application/json"
         ];
-        $gatewayUrl = $apiUrl. ltrim($endpoint,'/');
+        $gatewayUrl = $apiUrl . ltrim($endpoint, '/');
         $client = $this->clientFactory->create();
         $client->setHeaders($headers);
+		$client->setOption(CURLOPT_USERAGENT, $this->getUserAgent($isLive));
 
-        if(strtoupper($type) == "POST"){
+        $requestStartTime = microtime(true);
+
+        if (strtoupper($type) == "POST") {
             $client->post($gatewayUrl, $this->json->serialize($params));
-        }elseif (strtoupper($type) == "GET"){
-            if(is_array($params))
+        } elseif (strtoupper($type) == "GET") {
+            if (is_array($params))
                 $gatewayUrl .= "?" . http_build_query($params);
             $client->get($gatewayUrl);
         }
+        $requestEndTime = microtime(true);
         $response = $client->getBody();
         \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("New Request");
         \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("URL::" . $gatewayUrl);
         \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("Params::" . json_encode($params));
         \Mageserv\UPayments\Logger\UPaymentsLogger::ulog($response);
         json_decode($response);
-        if(json_last_error() !== JSON_ERROR_NONE)
+        if (json_last_error() !== JSON_ERROR_NONE)
             throw new LocalizedException(__("Invalid response from UPayments Gateway, Please make sure that you have whitelisted your server IP"));
+        $methodEndTime = microtime(true);
+        $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/upayments_time.log');
+        $logger = new \Zend_Log();
+        $logger->addWriter($writer);
+        $logger->info(print_r([
+            'endpoint' => $endpoint,
+            'method_time' => $methodEndTime - $methodStartTime,
+            'request_time' => $requestEndTime - $methodStartTime,
+        ], true));
         return $response;
     }
 
     public function isWhiteLabeled()
     {
-        try{
+        $cacheKey = 'upayments_is_white_labeled';
+        $cached = $this->cache->load($cacheKey);
+        if ($cached) {
+            return (bool) $cached;
+        }
+        try {
             $token = $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_token");
             $resp = $this->json->unserialize(
                 $this->sendRequest(self::IS_WHITELABELED, 'POST', [
                     'apiKey' => $token
                 ])
             );
-            return $resp['data']['isWhiteLabel'];
-        }catch (\Exception $exception){
+            $isWhiteLabel = $resp['data']['isWhiteLabel'];
+            $this->cache->save($isWhiteLabel ? '1' : '0', $cacheKey, [], 365*24*60*60);
+        } catch (\Exception $exception) {
             \Mageserv\UPayments\Logger\UPaymentsLogger::ulog($exception->getMessage());
         }
         return false;
     }
+
     public function tokenize(array $params)
     {
         return $this->json->unserialize(
             $this->sendRequest(self::CREATE_CARD_TOKEN, 'POST', $params)
         );
     }
+
     public function checkAvailableMethods()
     {
+        $cacheKey = 'upayments_buttons_status';
+        $cached = $this->cache->load($cacheKey);
+        if ($cached) {
+            return $this->json->unserialize($cached);
+        }
+
         try {
             $resp = $this->json->unserialize(
                 $this->sendRequest(self::CHECK_PAYMENT_BUTTONS_STATUSES, 'GET', [
                     'source' => 'sdk'
                 ])
             );
-            return $resp['data']['payButtons'];
-        }catch (\Exception $exception){
-                \Mageserv\UPayments\Logger\UPaymentsLogger::ulog($exception->getMessage());
-            }
+            $response = $resp['data']['payButtons'] ?? [];
+            $this->cache->save($this->json->serialize($response), $cacheKey, [], 24 * 60 * 60);
+            return $response;
+        } catch (\Exception $exception) {
+            \Mageserv\UPayments\Logger\UPaymentsLogger::ulog($exception->getMessage());
+        }
         return [];
     }
+
     public function revokeCardToken($token)
     {
         return $this->sendRequest(self::REVOKE_CARD_ENDPOINT, 'POST', ['token' => $token]);
     }
+
+	public function getUserAgent($isLive)
+	{
+		$userAgent = 'SandboxUpaymentsMagentoPlugin/3.3.6';
+		if ($isLive) {
+			$userAgent = 'UpaymentsMagentoPlugin/3.3.6';
+		}
+		return $userAgent;
+	}
 }

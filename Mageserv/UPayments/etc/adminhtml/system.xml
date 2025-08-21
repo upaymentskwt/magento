@@ -14,33 +14,39 @@
             <group id="upayments" translate="label" type="text" sortOrder="90" showInDefault="1" showInWebsite="1"
                    showInStore="1">
                 <label>UPayments</label>
+                <field id="active" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1"
+                       showInStore="1">
+                    <label>Enable UPayments Gateway</label>
+                    <comment><![CDATA[This will enable/disable UPayments Gateway as]]></comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
                 <field id="enable_live_mode" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
+                       showInStore="1">
                     <label>Enable Live Mode ?</label>
                     <comment><![CDATA[This will enable live mode, Use it in production only]]></comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="api_token" translate="label" type="text" sortOrder="21" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
+                       showInStore="1">
                     <label>API Token</label>
                 </field>
                 <field id="log_enabled" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1"
-                       showInStore="0">
+                       showInStore="1">
                     <label>Enable Debugging</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="currency_select" translate="label" type="select" sortOrder="28" showInDefault="1"
-                       showInWebsite="1" showInStore="0" canRestore="1">
+                       showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Payment Currency</label>
                     <source_model>Mageserv\UPayments\Model\Adminhtml\Source\CurrencySelect</source_model>
                 </field>
                 <field id="order_status" translate="label" type="select" sortOrder="31" showInDefault="1"
-                       showInWebsite="1" showInStore="0">
+                       showInWebsite="1" showInStore="1">
                     <label>New Order Status</label>
                     <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                 </field>
                 <field id="order_success_status" translate="label" type="select" sortOrder="32" showInDefault="1"
-                       showInWebsite="1" showInStore="0" canRestore="1">
+                       showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Successful payment order status</label>
                     <source_model>Magento\Sales\Model\Config\Source\Order\Status</source_model>
                 </field>
@@ -50,7 +56,7 @@
                     <source_model>Mageserv\UPayments\Model\Adminhtml\Source\Language</source_model>
                 </field>
                 <field id="upayments_vault_active" translate="label" type="select" sortOrder="1" showInDefault="1"
-                       showInWebsite="1" showInStore="0">
+                       showInWebsite="1" showInStore="1">
                     <label>Enable Tokenization</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <config_path>payment/upayments_vault/active</config_path>

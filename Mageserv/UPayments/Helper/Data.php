@@ -203,7 +203,7 @@ class Data extends AbstractHelper
                 $invoice = $this->invoiceService->prepareInvoice($order);
                 $invoice->setState(\Magento\Sales\Model\Order\Invoice::STATE_PAID);
                 $invoice->setIsUsedForRefund(0);
-                $invoice->register();
+                $invoice->register()->capture();
                 $invoice->save();
                 $transactionSave = $this->transaction->addObject(
                     $invoice

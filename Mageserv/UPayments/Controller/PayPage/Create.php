@@ -10,7 +10,6 @@ use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
-use Magento\Vault\Model\Ui\VaultConfigProvider;
 use Mageserv\UPayments\Gateway\Http\Client\Api;
 use stdClass;
 
@@ -31,7 +30,6 @@ class Create extends Action
     protected $checkoutSession;
     protected $_customerSession;
     protected $apiClient;
-
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -72,6 +70,7 @@ class Create extends Action
      */
     public function execute()
     {
+        $startTime = microtime(true);
         $result = $this->jsonResultFactory->create();
 
         // Get the params that were passed from our Router
@@ -87,6 +86,7 @@ class Create extends Action
         }
 
         // Create PayPage
+        /** @var \Magento\Sales\Model\Order $order */
         $order = $this->getOrder();
         if (!$order) {
             $this->_logger->critical("UPayments::Order is missing!, Quote [{$quoteId}]");
@@ -97,11 +97,8 @@ class Create extends Action
             ]);
             return $result;
         }
-        $order->setStatus("pending_payment");
-        $order->setState("pending_payment");
-        $order->save();
 
-        try{
+        try {
             $paypage = $this->apiClient->charge($order);
             if ($paypage->success) {
                 $this->_logger->info("UPayments::  create paypage success!, Order [{$order->getIncrementId()}]");
@@ -122,7 +119,7 @@ class Create extends Action
                 }
                 $order->cancel()->save();
             }
-        }catch (\Exception $e){
+        } catch (\Exception $e) {
             $this->_logger->critical("UPayments: create paypage failed!, Order [{$order->getIncrementId()}] - " . $e->getMessage());
             \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("UPayments: create paypage failed!, Order [{$order->getIncrementId()}] - " . $e->getMessage());
             try {
@@ -140,17 +137,22 @@ class Create extends Action
             ];
         }
 
-
         /*if (Api::hadPaid($order)) {
             $paypage->had_paid = true;
             $paypage->order_id = $order->getId();
         }*/
 
         $result->setData($paypage);
+        $endTime = microtime(true);
+        $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/upayments_time.log');
+        $logger = new \Zend_Log();
+        $logger->addWriter($writer);
+        $logger->info(print_r([
+            'service' => 'create payment link',
+            'observer_time' => $endTime - $startTime,
+        ], true));
         return $result;
     }
-
-
 
     public function getOrder()
     {

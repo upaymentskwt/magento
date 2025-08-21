@@ -23,8 +23,6 @@ class Ipn extends Checkout
                 $success = strtoupper($params['result']) == StatusEnum::CAPTURED;
                 if($success){
                     $this->helper->successOrder($order, $params);
-                }else{
-                    //$this->helper->cancelOrder($order, __("UPayments :: payment has failed."));
                 }
             }
         }catch (\Exception $exception){}
