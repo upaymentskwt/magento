@@ -59,20 +59,25 @@ class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActio
 
         $quote = $this->quoteRepository->get($quoteId);
         try{
-
-
             $customerId = $quote->getCustomerId();
             if($customerId){
                 $customer = $this->customerRepository->getById($customerId);
                 $uid = $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE) ? $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() : null;
                 if(!$uid){
                     $uid = $this->helper->generateCustomerUid($customer->getEmail());
-                    $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
-                    $this->customerRepository->save($customer);
+
+                    if (! empty($uid)){
+                        $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
+                        $this->customerRepository->save($customer);
+                    }
                 }
-            }else{
-                $uid = $this->helper->generateCustomerUid($quote->getCustomerEmail());
             }
+
+            // commented to ignore passing customerUniqueToken for the guests
+            /*else{
+                $uid = $this->helper->generateCustomerUid($quote->getCustomerEmail());
+            }*/
+
             $exp_year = $additional_data[DataAssignObserver::CC_EXP_YEAR];
             if(strlen($exp_year) >= 4)
                 $exp_year = $exp_year%100;
@@ -86,9 +91,14 @@ class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActio
                     ],
                     "securityCode" => $additional_data[DataAssignObserver::CC_ID],
                     "nameOnCard" => ""
-                ],
-                "customerUniqueToken" => $uid
+                ]
             ];
+
+            // pass the $uid only for the login users
+            if (!empty($customerId) && !empty($uid)) {
+                $params["customerUniqueToken"] = $uid;
+            }
+
             $publicHash = $this->helper->generatePublicHash($params['card']);
 
             $resp = $this->api->tokenize($params);

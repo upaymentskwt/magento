@@ -27,6 +27,7 @@ use Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface as Transactio
 use Mageserv\UPayments\Setup\InstallData;
 use Mageserv\UPayments\Setup\UpgradeData;
 use Magento\Vault\Api\PaymentTokenManagementInterface;
+use Magento\Vault\Model\Ui\VaultConfigProvider;
 
 class Data extends AbstractHelper
 {
@@ -81,12 +82,23 @@ class Data extends AbstractHelper
 
     public function generateCustomerUid($email = null)
     {
-        if (!$email)
-            $email = $this->generateRandomString() . '@upayments.com';
+        $isTokenized = $this->scopeConfig->getValue(VaultCoVaultConfigProvidernfigProvider::IS_ACTIVE_CODE);
+        $uid = null;
 
-        $uid = crc32($email);
-        //check if UID previously generated else return new token
-        $this->apiClient->createCustomerToken($uid);
+        \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("DEBUG:KHALID");
+        \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("isTokenizedFromData::" . $isTokenized);
+
+        if ($isTokenized && $email) {
+
+            // Comment to dis-allow to create customerUniqueTokens without email address
+            /*if (!$email)
+                $email = $this->generateRandomString() . '@upayments.com';*/
+
+            $uid = crc32($email);
+            //check if UID previously generated else return new token
+            $this->apiClient->createCustomerToken($uid);
+        }
+
         return $uid;
     }
 
@@ -116,8 +128,10 @@ class Data extends AbstractHelper
             $uid = $customer->getCustomAttribute(InstallData::UPAYMENTS_TOKEN_ATTRIBUTE) ?
                 $customer->getCustomAttribute(InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() :
                 null;
-            if(!$uid)
-                $uid = $this->generateCustomerUid($customer->getEmail());
+
+            // Commented to allow only the pre created tokens to fetch the saved cards
+            /*if(!$uid)
+                $uid = $this->generateCustomerUid($customer->getEmail());*/
 
             if ($uid) {
                 $tokens = $this->apiClient->fetchCards($uid);

@@ -47,9 +47,13 @@ class Extras implements BuilderInterface
             $instance = $order->getPayment()->getMethodInstance();
             $isTokenized = $order->getPayment()->getAdditionalInformation(VaultConfigProvider::IS_ACTIVE_CODE);
         }
+
+        \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("DEBUG:KHALID");
+        \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("isTokenizedFromExtra::" . $isTokenized);
+
         return [
             "language" => $this->scopeConfig->getValue('payment/upayments/language'),
-            'isSaveCard'=> (bool) ($isTokenized ?:1),
+            // 'isSaveCard'=> (bool) ($isTokenized ?:0),
             //'is_whitelabled' => 1,
             'returnUrl' => $this->url->getUrl('upayments/paypage/success'),
             'cancelUrl' => $this->url->getUrl('upayments/paypage/fail'),

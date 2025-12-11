@@ -41,16 +41,37 @@ class Tokens implements BuilderInterface
             $uid = $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE) ? $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() : null;
             if(!$uid){
                 $uid = $this->uidHelper->generateCustomerUid($customer->getEmail());
-                $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
-                $this->customerRepository->save($customer);
+
+                if (!empty($uid)){
+                    $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
+                    $this->customerRepository->save($customer);
+                }
             }
-        }else{
-            $uid = $this->uidHelper->generateCustomerUid($order->getCustomerEmail());
         }
-        return [
-            'tokens' => [
-                'customerUniqueToken' => $uid
-            ]
-        ];
+
+        // commented to ignore passing customerUniqueToken for the guests
+        /*else{
+            $uid = $this->uidHelper->generateCustomerUid($order->getCustomerEmail());
+        }*/
+
+        if(!empty($buildSubject['payment'])){
+            $paymentDO = $buildSubject['payment'];
+            $isTokenized = $paymentDO->getPayment()->getAdditionalInformation(VaultConfigProvider::IS_ACTIVE_CODE);
+        }else{
+            $isTokenized = $order->getPayment()->getAdditionalInformation(VaultConfigProvider::IS_ACTIVE_CODE);
+        }
+
+        \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("DEBUG:KHALID");
+        \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("isTokenizedFromTokens::" . $isTokenized);
+
+        if (! empty($uid)){
+            return [
+                'tokens' => [
+                    'customerUniqueToken' => $uid
+                ]
+            ];
+        }else{
+            return [];
+        }
     }
 }
