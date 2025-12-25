@@ -8,11 +8,11 @@
 
 namespace Mageserv\UPayments\Gateway\Request\Builder;
 
-
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Sales\Api\Data\OrderInterface;
 use Mageserv\UPayments\Helper\Data;
+
 class Customer implements BuilderInterface
 {
 
@@ -36,18 +36,25 @@ class Customer implements BuilderInterface
             throw new \InvalidArgumentException('order data object should be provided');
         }
         $order = $buildSubject['order'];
-        $customerId = $order->getCustomerId();
+        $customerId = $uid = $order->getCustomerId();
         if($customerId){
             $customer = $this->customerRepository->getById($customerId);
             $uid = $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE) ? $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() : null;
             if(!$uid){
-                $uid = $this->uidHelper->generateCustomerUid($customer->getEmail());
-                $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
-                $this->customerRepository->save($customer);
+                // generate and save uid + Customer Found with Login Status true
+                $uid = $this->uidHelper->generateCustomerUid($customer->getEmail(), true);
+                if (!empty($uid)){
+                    $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
+                    $this->customerRepository->save($customer);
+                }
             }
-        }else{
-            $uid = $this->uidHelper->generateCustomerUid($order->getCustomerEmail());
         }
+
+        // commented to ignore passing customerUniqueToken for the guests
+        /*else{
+            $uid = $this->uidHelper->generateCustomerUid($order->getCustomerEmail());
+        }*/
+
         return [
             'customer' => [
                 'uniqueId' => (string) $uid,

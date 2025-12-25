@@ -1,6 +1,6 @@
 # UPayments - Magento
 
-The Official Magento2 plugin for UPayments Pulgin version - 3.3.7
+The Official Magento2 plugin for UPayments Pulgin version - 3.3.8
 
 ---
 
@@ -72,3 +72,5 @@ Done
 --3.3.6 User Agent Added
 
 --3.3.7 Send Email after order - Issue Fixed
+
+-- 3.3.8 Tokenization Issue Fixed

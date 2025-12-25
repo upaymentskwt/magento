@@ -10,15 +10,18 @@ namespace Mageserv\UPayments\Controller\PayPage;
 
 
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\App\CsrfAwareActionInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\CsrfAwareActionInterface;
 use Mageserv\UPayments\Gateway\Http\Client\Api;
 use Mageserv\UPayments\Helper\Data;
 use Mageserv\UPayments\Observer\DataAssignObserver;
-use Magento\Framework\App\Action\Action;
+use Mageserv\UPayments\Logger\UPaymentsLogger;
+
 class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActionInterface
 {
     protected $jsonResultFactory;
@@ -26,13 +29,16 @@ class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActio
     protected $customerRepository;
     protected $helper;
     protected $api;
+    protected $scopeConfig;
+
     public function __construct(
         Context $context,
         \Magento\Framework\Controller\Result\JsonFactory $jsonResultFactory,
         \Magento\Quote\Api\CartRepositoryInterface $quoteRepository,
         CustomerRepositoryInterface $customerRepository,
         Data $helper,
-        Api $api
+        Api $api,
+        ScopeConfigInterface $scopeConfig
     )
     {
         parent::__construct($context);
@@ -41,6 +47,7 @@ class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActio
         $this->customerRepository = $customerRepository;
         $this->helper = $helper;
         $this->api = $api;
+        $this->scopeConfig = $scopeConfig;
     }
 
     public function execute()
@@ -58,24 +65,37 @@ class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActio
         $quoteId = $additional_data['quote_id'];
 
         $quote = $this->quoteRepository->get($quoteId);
+
+        // Tokenization enabled check
+        $isTokenized = $this->scopeConfig->getValue('payment/upayments_vault/active');
+
+        UPaymentsLogger::ulog("DEBUG:KHALID");
+        UPaymentsLogger::ulog("isTokenized Tokenize::" . (bool) $isTokenized);
+
         try{
-
-
             $customerId = $quote->getCustomerId();
             if($customerId){
                 $customer = $this->customerRepository->getById($customerId);
                 $uid = $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE) ? $customer->getCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() : null;
                 if(!$uid){
-                    $uid = $this->helper->generateCustomerUid($customer->getEmail());
-                    $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
-                    $this->customerRepository->save($customer);
+                    $uid = $this->helper->generateCustomerUid($customer->getEmail(), true);
+
+                    if (! empty($uid)){
+                        $customer->setCustomAttribute(\Mageserv\UPayments\Setup\InstallData::UPAYMENTS_TOKEN_ATTRIBUTE, $uid);
+                        $this->customerRepository->save($customer);
+                    }
                 }
-            }else{
-                $uid = $this->helper->generateCustomerUid($quote->getCustomerEmail());
             }
+
+            // commented to ignore passing customerUniqueToken for the guests
+            /*else{
+                $uid = $this->helper->generateCustomerUid($quote->getCustomerEmail());
+            }*/
+
             $exp_year = $additional_data[DataAssignObserver::CC_EXP_YEAR];
-            if(strlen($exp_year) >= 4)
+            if(strlen($exp_year) >= 4){
                 $exp_year = $exp_year%100;
+            }
             $params =  [
                 'endpoint' => Api::CREATE_CARD_TOKEN,
                 "card" => [
@@ -86,16 +106,22 @@ class Tokenize extends Action implements HttpPostActionInterface, CsrfAwareActio
                     ],
                     "securityCode" => $additional_data[DataAssignObserver::CC_ID],
                     "nameOnCard" => ""
-                ],
-                "customerUniqueToken" => $uid
+                ]
             ];
+
+            // pass the $uid only for the login users
+            if (!empty($customerId) && !empty($uid)) {
+                $params["customerUniqueToken"] = $uid;
+            }
+
             $publicHash = $this->helper->generatePublicHash($params['card']);
 
             $resp = $this->api->tokenize($params);
             if($resp['status'] && !empty($resp['data'])){
                 $isValid = $resp['data']['cardData']['status'] == "VALID";
-                if(!$isValid)
+                if(!$isValid){
                     throw new \Exception(__("Invalid card details"));
+                }
 
                 $success = true;
                 $message = $resp['message'];

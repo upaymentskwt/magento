@@ -13,25 +13,23 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
-use Magento\Sales\Api\Data\OrderInterface;
-use Magento\Sales\Model\Order;
-use Magento\Sales\Model\Order\Invoice\NotifierInterface as InvoiceSenderInterface;
-use Magento\Sales\Model\Service\InvoiceService;
-use Magento\Store\Model\ScopeInterface;
-use Magento\Vault\Api\Data\PaymentTokenInterface;
-use Magento\Vault\Api\PaymentTokenRepositoryInterface;
-use Mageserv\UPayments\Gateway\Http\Client\Api;
-use Magento\Sales\Model\OrderFactory;
 use Magento\Framework\DB\Transaction;
+use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Api\Data\OrderInterface;
+use Magento\Sales\Model\Service\InvoiceService;
+use Magento\Sales\Model\Order\Invoice\NotifierInterface as InvoiceSenderInterface;
 use Magento\Sales\Model\Order\Payment\Transaction\BuilderInterface as TransactionBuilder;
+use Magento\Vault\Api\PaymentTokenRepositoryInterface;
+use Magento\Vault\Api\PaymentTokenManagementInterface;
+use Magento\Vault\Api\Data\PaymentTokenFactoryInterface;
+use Mageserv\UPayments\Gateway\Http\Client\Api;
 use Mageserv\UPayments\Setup\InstallData;
 use Mageserv\UPayments\Setup\UpgradeData;
-use Magento\Vault\Api\PaymentTokenManagementInterface;
+use Mageserv\UPayments\Logger\UPaymentsLogger;
 
 class Data extends AbstractHelper
 {
-
-
     const PAYPAGE_LANG_XML_PATH = "payment/upayments/language";
     protected $apiClient;
     protected $invoiceSender;
@@ -40,24 +38,24 @@ class Data extends AbstractHelper
     protected $transactionBuilder;
     protected $scopeConfig;
     protected $customerRepository;
-    protected $_paymentTokenFactory;
+    protected $paymentTokenFactory;
     protected $paymentTokenRepository;
     protected $paymentTokenManagement;
     protected $encryptor;
 
     public function __construct(
-        Context                                              $context,
-        InvoiceSenderInterface                               $invoiceSender,
-        InvoiceService                                       $invoiceService,
-        Transaction                                          $transaction,
-        TransactionBuilder                                   $transactionBuilder,
-        ScopeConfigInterface                                 $scopeConfig,
         Api                                                  $apiClient,
+        Context                                              $context,
+        Transaction                                          $transaction,
+        InvoiceService                                       $invoiceService,
+        TransactionBuilder                                   $transactionBuilder,
+        EncryptorInterface                                   $encryptor,
+        ScopeConfigInterface                                 $scopeConfig,
+        InvoiceSenderInterface                               $invoiceSender,
         CustomerRepositoryInterface                          $customerRepository,
-        \Magento\Vault\Api\Data\PaymentTokenFactoryInterface $paymentTokenFactory,
+        PaymentTokenFactoryInterface                         $paymentTokenFactory,
         PaymentTokenRepositoryInterface                      $paymentTokenRepository,
-        \Magento\Framework\Encryption\EncryptorInterface     $encryptor,
-        PaymentTokenManagementInterface $paymentTokenManagement
+        PaymentTokenManagementInterface                      $paymentTokenManagement
     )
     {
         $this->apiClient = $apiClient;
@@ -67,7 +65,7 @@ class Data extends AbstractHelper
         $this->transactionBuilder = $transactionBuilder;
         $this->scopeConfig = $scopeConfig;
         $this->customerRepository = $customerRepository;
-        $this->_paymentTokenFactory = $paymentTokenFactory;
+        $this->paymentTokenFactory = $paymentTokenFactory;
         $this->encryptor = $encryptor;
         $this->paymentTokenRepository = $paymentTokenRepository;
         $this->paymentTokenManagement = $paymentTokenManagement;
@@ -79,14 +77,26 @@ class Data extends AbstractHelper
         return $this->scopeConfig->getValue($field);
     }
 
-    public function generateCustomerUid($email = null)
+    public function generateCustomerUid($email = null, $isLoggedin = false)
     {
-        if (!$email)
-            $email = $this->generateRandomString() . '@upayments.com';
+        // Tokenization enabled check + User Logged in check
+        $isTokenized = $this->scopeConfig->getValue('payment/upayments_vault/active');
+        $uid = null;
 
-        $uid = crc32($email);
-        //check if UID previously generated else return new token
-        $this->apiClient->createCustomerToken($uid);
+        UPaymentsLogger::ulog("DEBUG:KHALID");
+        UPaymentsLogger::ulog("isTokenized Data::" . (bool) $isTokenized);
+
+        if ($isTokenized && $email && $isLoggedin) {
+
+            // Comment to dis-allow to create customerUniqueTokens without email address
+            // if (!$email)
+                // $email = $this->generateRandomString() . '@upayments.com';
+            
+            $uid = crc32($email);
+            //check if UID previously generated else return new token
+            $this->apiClient->createCustomerToken($uid);
+        }
+
         return $uid;
     }
 
@@ -100,6 +110,7 @@ class Data extends AbstractHelper
         }
         return $randomString;
     }
+
     public function fetchSavedCardsByOrder($order)
     {
         $customerId = $order->getCustomerId();
@@ -114,15 +125,18 @@ class Data extends AbstractHelper
         $customer = $this->customerRepository->getById($customerId);
         if ($customer->getId()) {
             $uid = $customer->getCustomAttribute(InstallData::UPAYMENTS_TOKEN_ATTRIBUTE) ?
-                $customer->getCustomAttribute(InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() :
-                null;
-            if(!$uid)
-                $uid = $this->generateCustomerUid($customer->getEmail());
+            $customer->getCustomAttribute(InstallData::UPAYMENTS_TOKEN_ATTRIBUTE)->getValue() :
+            null;
+
+            // Commented to allow only the pre created tokens to fetch the saved cards
+            // if(!$uid)
+            //     $uid = $this->generateCustomerUid($customer->getEmail());
 
             if ($uid) {
                 $tokens = $this->apiClient->fetchCards($uid);
-                if (is_array($tokens))
+                if (is_array($tokens)){
                     $this->saveToken($customerId, $tokens);
+                }
             }
         }
     }
@@ -132,10 +146,9 @@ class Data extends AbstractHelper
     }
     public function generatePublicHash($params)
     {
-        if(is_array($params))
+        if(is_array($params)){
             $params = json_encode($params);
-
-        //return $this->encryptor->getHash($params);
+        }
         return md5($params);
     }
     /**
@@ -145,8 +158,9 @@ class Data extends AbstractHelper
      */
     public function saveToken($customerId, $tokens)
     {
-        if(!is_array($tokens))
+        if(!is_array($tokens)){
             $tokens = [$tokens];
+        }
         foreach ($tokens as $token) {
             $sof = $token['sourceOfFunds'];
             $isCard = strtoupper($sof['type']) == 'CARD';
@@ -158,7 +172,7 @@ class Data extends AbstractHelper
             $expiry = str_split($token_details['expiry'], 2);
             $str_token_details = json_encode($token_details);
             $gateway_token = $token['token'];
-            $paymentToken = $this->_paymentTokenFactory->create($tokenType);
+            $paymentToken = $this->paymentTokenFactory->create($tokenType);
             $paymentToken
                 ->setGatewayToken($gateway_token)
                 ->setCustomerId($customerId)
@@ -213,18 +227,22 @@ class Data extends AbstractHelper
                 $transactionSave->save();
                 $this->invoiceSender->notify($order, $invoice);
 
-                if($createTransaction)
+                if($createTransaction){
                     $this->addTransactionToOrder($order, $params);
+                }
             }
             $order->setStatus($this->scopeConfig->getValue('order_success_status') ?? Order::STATE_PROCESSING);
             $order->setState(Order::STATE_PROCESSING);
             $order->addStatusToHistory(Order::STATE_PROCESSING, 'UPayments :: Order has been paid.', true);
-            if (!empty($params['upay_order_id']))
+            if (!empty($params['upay_order_id'])){
                 $order->setCustomAttribute(UpgradeData::UPAY_ORDER_ID, $params['upay_order_id']);
-            if (!empty($params['track_id']))
+            }
+            if (!empty($params['track_id'])){
                 $order->setCustomAttribute(UpgradeData::UPAY_TRACK_ID, $params['track_id']);
-            if($order->getId())
+            }
+            if($order->getId()){
                 $order->save();
+            }
             return true;
         }
         return false;
@@ -260,10 +278,12 @@ class Data extends AbstractHelper
 
             // Save payment, transaction and order
             $payment->save();
-            if($order->getId())
+            if($order->getId()){
                 $order->save();
+            }
             $transaction->save();
         } catch (\Exception $e) {
+            //code here
         }
     }
 }

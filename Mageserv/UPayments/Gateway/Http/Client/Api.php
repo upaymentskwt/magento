@@ -15,7 +15,6 @@ use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Payment\Helper\Data as PaymentHelper;
 use Magento\Sales\Model\Order;
-use Mageserv\UPayments\Api\Data\ChargeResponseInterface;
 use Mageserv\UPayments\Model\Ui\ConfigProvider;
 use Mageserv\UPayments\Model\Ui\StatusEnum;
 use Psr\Log\LoggerInterface;
@@ -38,7 +37,6 @@ class Api
     protected $json;
     protected $logger;
     protected $requestBuilder;
-    /** @var \Magento\Framework\HTTP\Client\Curl */
     protected $clientFactory;
     protected $helper;
     private $cache;
@@ -77,10 +75,12 @@ class Api
         if (!empty($result['status'])) {
             $response->success = $result['status'];
             $response->message = $result['message'] ?? "";
-            if (!empty($result['data']) && !empty($result['data']['link']))
+            if (!empty($result['data']) && !empty($result['data']['link'])){
                 $response->link = str_replace("http://", "https://", $result['data']['link']);
-            if (!empty($result['data']) && !empty($result['data']['trackId']))
+            }
+            if (!empty($result['data']) && !empty($result['data']['trackId'])){
                 $response->track_id = $result['data']['trackId'];
+            }
         } else {
             $response->message = $result['message'];
         }
@@ -113,8 +113,9 @@ class Api
                 $params
             )
         );
-        if (!empty($resp['data']) && !empty($resp['data']['customerCards']))
+        if (!empty($resp['data']) && !empty($resp['data']['customerCards'])){
             return $resp['data']['customerCards'];
+        }
         return [];
     }
 
@@ -122,8 +123,9 @@ class Api
     {
         $methodStartTime = microtime(true);
         $token = $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_token");
-        if (!$token)
+        if (!$token){
             throw new LocalizedException(__("UPayments module is not setup correctly, Please add your token!"));
+        }
 
         $isLive = $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("enable_live_mode");
         $apiUrl = $isLive ? self::API_LIVE_URL : self::API_STATING_URL;
@@ -143,8 +145,9 @@ class Api
         if (strtoupper($type) == "POST") {
             $client->post($gatewayUrl, $this->json->serialize($params));
         } elseif (strtoupper($type) == "GET") {
-            if (is_array($params))
+            if (is_array($params)){
                 $gatewayUrl .= "?" . http_build_query($params);
+            }
             $client->get($gatewayUrl);
         }
         $requestEndTime = microtime(true);
@@ -154,8 +157,9 @@ class Api
         \Mageserv\UPayments\Logger\UPaymentsLogger::ulog("Params::" . json_encode($params));
         \Mageserv\UPayments\Logger\UPaymentsLogger::ulog($response);
         json_decode($response);
-        if (json_last_error() !== JSON_ERROR_NONE)
+        if (json_last_error() !== JSON_ERROR_NONE){
             throw new LocalizedException(__("Invalid response from UPayments Gateway, Please make sure that you have whitelisted your server IP"));
+        }
         $methodEndTime = microtime(true);
         $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/upayments_time.log');
         $logger = new \Zend_Log();
