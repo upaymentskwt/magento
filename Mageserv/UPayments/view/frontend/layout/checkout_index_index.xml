@@ -107,6 +107,18 @@
                                                                         </item>
                                                                     </item>
                                                                 </item>
+                                                                <item name="upayments-appleknet" xsi:type="array">
+                                                                    <item name="component" xsi:type="string">
+                                                                        Mageserv_UPayments/js/view/payment/appleknet
+                                                                    </item>
+                                                                    <item name="methods" xsi:type="array">
+                                                                        <item name="upayments_appleknet" xsi:type="array">
+                                                                            <item name="isBillingAddressRequired"
+                                                                                  xsi:type="boolean">true
+                                                                            </item>
+                                                                        </item>
+                                                                    </item>
+                                                                </item>
                                                                 <item name="upayments-googlepay" xsi:type="array">
                                                                     <item name="component" xsi:type="string">
                                                                         Mageserv_UPayments/js/view/payment/googlepay

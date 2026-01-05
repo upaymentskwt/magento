@@ -19,6 +19,7 @@ class PaymentGateway implements BuilderInterface
         'knet' => 'knet',
         'samsungpay' => 'samsung-pay',
         'applepay' => 'apple-pay',
+        'appleknet' => 'apple-pay-knet',
         'googlepay' => 'google-pay',
         'amex' => 'amex'
     ];

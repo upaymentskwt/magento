@@ -14,6 +14,7 @@ final class ConfigProvider implements ConfigProviderInterface
     const CODE_UPAYMENTS_WHITELIST        = 'upayments_cc';
     const CODE_UPAYMENTS_SAMSUNGPAY       = 'upayments_samsungpay';
     const CODE_UPAYMENTS_APPLEPAY        = 'upayments_applepay';
+    const CODE_UPAYMENTS_APPLEKNET        = 'upayments_appleknet';
     const CODE_UPAYMENTS_KNET        = 'upayments_knet';
     const CODE_VAULT_UPAYMENTS = 'upayments_vault';
     const CODE_UPAYMENTS_GOOGLEPAY = 'upayments_googlepay';
@@ -65,7 +66,10 @@ final class ConfigProvider implements ConfigProviderInterface
                 'icon' => 'samsungpay.svg'
             ],
             self::CODE_UPAYMENTS_APPLEPAY => [
-                'icon' => 'applepay.svg'
+                'icon' => 'applecc.svg'
+            ],
+            self::CODE_UPAYMENTS_APPLEKNET => [
+                'icon' => 'appleknet.svg'
             ],
             self::CODE_UPAYMENTS_GOOGLEPAY => [
                 'icon' => 'googlepay.png'

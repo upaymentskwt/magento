@@ -35,6 +35,7 @@
                 <useccv>1</useccv>
                 <upayments_vault_active>1</upayments_vault_active>
             </upayments>
+            <!-- not whitelabeled Start -->
             <upayments_all>
                 <active>1</active>
                 <title>Pay by UPayments</title>
@@ -57,7 +58,52 @@
                 <is_offline>0</is_offline>
                 <sort_order>10</sort_order>
             </upayments_all>
-            <!-- not whitelabeled -->
+            <!-- not whitelabeled End -->
+            <!-- Whitelabeled Start -->
+            <upayments_knet>
+                <active>1</active>
+                <title>Pay by Knet</title>
+                <model>UPaymentsKnetFacade</model>
+                <payment_action>authorize</payment_action>
+                <can_initialize>0</can_initialize>
+                <can_authorize>1</can_authorize>
+                <can_capture>0</can_capture>
+                <can_capture_partial>0</can_capture_partial>
+                <can_void>0</can_void>
+                <can_cancel>0</can_cancel>
+                <can_refund>1</can_refund>
+                <can_refund_partial_per_invoice>1</can_refund_partial_per_invoice>
+                <can_use_checkout>1</can_use_checkout>
+                <can_use_internal>1</can_use_internal>
+                <can_review_payment>0</can_review_payment>
+                <can_deny_payment>0</can_deny_payment>
+                <can_capture_vault>1</can_capture_vault>
+                <is_gateway>1</is_gateway>
+                <is_offline>0</is_offline>
+                <sort_order>20</sort_order>
+            </upayments_knet>
+            <upayments_appleknet>
+                <active>1</active>
+                <title>Pay by Apple Knet</title>
+                <model>UPaymentsAppleKNETFacade</model>
+                <payment_action>authorize</payment_action>
+                <can_initialize>0</can_initialize>
+                <can_authorize>1</can_authorize>
+                <can_capture>0</can_capture>
+                <can_capture_partial>0</can_capture_partial>
+                <can_void>0</can_void>
+                <can_cancel>0</can_cancel>
+                <can_refund>1</can_refund>
+                <can_refund_partial_per_invoice>1</can_refund_partial_per_invoice>
+                <can_use_checkout>1</can_use_checkout>
+                <can_use_internal>1</can_use_internal>
+                <can_review_payment>0</can_review_payment>
+                <can_deny_payment>0</can_deny_payment>
+                <can_capture_vault>0</can_capture_vault>
+                <is_gateway>1</is_gateway>
+                <is_offline>0</is_offline>
+                <sort_order>30</sort_order>
+            </upayments_appleknet>
             <upayments_creditcard>
                 <active>1</active>
                 <title>Pay by Credit Card</title>
@@ -106,10 +152,10 @@
                 <useccv>1</useccv>
                 <sort_order>10</sort_order>
             </upayments_cc>-->
-            <upayments_knet>
+            <upayments_applepay>
                 <active>1</active>
-                <title>Pay by Knet</title>
-                <model>UPaymentsKnetFacade</model>
+                <title>Pay by Apple Credit Card</title>
+                <model>UPaymentsApplePayFacade</model>
                 <payment_action>authorize</payment_action>
                 <can_initialize>0</can_initialize>
                 <can_authorize>1</can_authorize>
@@ -123,11 +169,11 @@
                 <can_use_internal>1</can_use_internal>
                 <can_review_payment>0</can_review_payment>
                 <can_deny_payment>0</can_deny_payment>
-                <can_capture_vault>1</can_capture_vault>
+                <can_capture_vault>0</can_capture_vault>
                 <is_gateway>1</is_gateway>
                 <is_offline>0</is_offline>
-                <sort_order>20</sort_order>
-            </upayments_knet>
+                <sort_order>30</sort_order>
+            </upayments_applepay>
             <upayments_samsungpay>
                 <active>1</active>
                 <title>Pay by Samsung Pay</title>
@@ -150,28 +196,6 @@
                 <is_offline>0</is_offline>
                 <sort_order>50</sort_order>
             </upayments_samsungpay>
-            <upayments_applepay>
-                <active>1</active>
-                <title>Pay by Apple Pay</title>
-                <model>UPaymentsApplePayFacade</model>
-                <payment_action>authorize</payment_action>
-                <can_initialize>0</can_initialize>
-                <can_authorize>1</can_authorize>
-                <can_capture>0</can_capture>
-                <can_capture_partial>0</can_capture_partial>
-                <can_void>0</can_void>
-                <can_cancel>0</can_cancel>
-                <can_refund>1</can_refund>
-                <can_refund_partial_per_invoice>1</can_refund_partial_per_invoice>
-                <can_use_checkout>1</can_use_checkout>
-                <can_use_internal>1</can_use_internal>
-                <can_review_payment>0</can_review_payment>
-                <can_deny_payment>0</can_deny_payment>
-                <can_capture_vault>0</can_capture_vault>
-                <is_gateway>1</is_gateway>
-                <is_offline>0</is_offline>
-                <sort_order>30</sort_order>
-            </upayments_applepay>
             <upayments_googlepay>
                 <active>1</active>
                 <title>Pay by Google Pay</title>
@@ -216,6 +240,7 @@
                 <is_offline>0</is_offline>
                 <sort_order>40</sort_order>
             </upayments_amex>
+            <!-- Whitelabeled End -->
             <upayments_vault>
                 <title>UPayments - Tokenization</title>
                 <model>UPaymentsVaultFacade</model>

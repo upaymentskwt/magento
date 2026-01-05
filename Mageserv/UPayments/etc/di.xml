@@ -68,6 +68,16 @@
             <argument name="commandPool" xsi:type="object">UPaymentsCommandPool</argument>
         </arguments>
     </virtualType>
+    <!-- Apple Pay Method -->
+    <virtualType name="UPaymentsAppleKNETFacade" type="Mageserv\UPayments\Model\UPayments">
+        <arguments>
+            <argument name="code" xsi:type="const">Mageserv\UPayments\Model\Ui\ConfigProvider::CODE_UPAYMENTS_APPLEKNET</argument>
+            <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
+            <argument name="infoBlockType" xsi:type="string">Mageserv\UPayments\Block\Info</argument>
+            <argument name="valueHandlerPool" xsi:type="object">UPaymentsAppleKNETValueHandlerPool</argument>
+            <argument name="commandPool" xsi:type="object">UPaymentsCommandPool</argument>
+        </arguments>
+    </virtualType>
     <!-- Google Pay Method -->
     <virtualType name="UPaymentsGooglePayFacade" type="Mageserv\UPayments\Model\UPayments">
         <arguments>
@@ -230,6 +240,13 @@
             </argument>
         </arguments>
     </virtualType>
+    <virtualType name="UPaymentsAppleKNETValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="default" xsi:type="string">UPaymentsAppleKNETConfigValueHandlerAll</item>
+            </argument>
+        </arguments>
+    </virtualType>
     <virtualType name="UPaymentsGooglePayValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
         <arguments>
             <argument name="handlers" xsi:type="array">
@@ -283,6 +300,11 @@
             <argument name="configInterface" xsi:type="object">UPaymentsApplePayConfig</argument>
         </arguments>
     </virtualType>
+    <virtualType name="UPaymentsAppleKNETConfigValueHandlerAll" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
+        <arguments>
+            <argument name="configInterface" xsi:type="object">UPaymentsAppleKNETConfig</argument>
+        </arguments>
+    </virtualType>
     <virtualType name="UPaymentsGooglePayConfigValueHandlerAll" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
         <arguments>
             <argument name="configInterface" xsi:type="object">UPaymentsGooglePayConfig</argument>
@@ -328,6 +350,11 @@
     <virtualType name="UPaymentsApplePayConfig" type="Magento\Payment\Gateway\Config\Config">
         <arguments>
             <argument name="methodCode" xsi:type="const">Mageserv\UPayments\Model\Ui\ConfigProvider::CODE_UPAYMENTS_APPLEPAY</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="UPaymentsAppleKNETConfig" type="Magento\Payment\Gateway\Config\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="const">Mageserv\UPayments\Model\Ui\ConfigProvider::CODE_UPAYMENTS_APPLEKNET</argument>
         </arguments>
     </virtualType>
     <virtualType name="UPaymentsGooglePayConfig" type="Magento\Payment\Gateway\Config\Config">
