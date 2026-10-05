@@ -113,14 +113,21 @@ class Api
         if(!$token)
             throw new LocalizedException(__("UPayments module is not setup correctly, Please add your token!"));
 
+        $secretKey = $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_secret");
+        if(!$secretKey)
+            throw new LocalizedException(__("UPayments module is not setup correctly, Please add your secret key!"));
+
         $isLive =  $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("enable_live_mode");
         $apiUrl =  $isLive ? self::API_LIVE_URL : self::API_STATING_URL;
 
         $headers = [
             'Content-Type' => 'application/json',
             "Authorization" => "Bearer {$token}",
-            "Accept" => "application/json"
+            "Accept" => "application/json",
+            "Uplugin-Request" => 1, 
+            "X-Signature" => $secretKey
         ];
+        
         $gatewayUrl = $apiUrl. ltrim($endpoint,'/');
         $client = $this->clientFactory->create();
         $client->setHeaders($headers);

@@ -24,6 +24,10 @@
                        showInStore="0">
                     <label>API Token</label>
                 </field>
+                <field id="api_secret" translate="label" type="text" sortOrder="21" showInDefault="1" showInWebsite="1"
+                       showInStore="0">
+                    <label>API Secret Key</label>
+                </field>
                 <field id="log_enabled" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1"
                        showInStore="0">
                     <label>Enable Debugging</label>
