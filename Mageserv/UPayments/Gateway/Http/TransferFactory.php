@@ -51,7 +51,7 @@ class TransferFactory implements TransferFactoryInterface
             ->setHeaders([
                 'Authorization' => 'Bearer ' . $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_token"),
                 'Uplugin-Request' => 1,
-                'X-Signature'     => $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_secret")
+                'X-Signature'     => $this->paymentHelper->getMethodInstance(ConfigProvider::CODE_UPAYMENTS)->getConfigData("api_token")
             ])
             ->setUri($apiUrl)
             ->build();
