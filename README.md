@@ -76,3 +76,5 @@ Done
 -- 3.3.8 Tokenization Issue Fixed
 
 -- 3.3.9 Two Apple Pay Buttons(Apple CC/ Apple Knet) added
+
+-- 4.0.0 Implement HMAC Authentication changes

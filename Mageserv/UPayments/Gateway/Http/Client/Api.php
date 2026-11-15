@@ -119,8 +119,11 @@ class Api
         $headers = [
             'Content-Type' => 'application/json',
             "Authorization" => "Bearer {$token}",
-            "Accept" => "application/json"
+            "Accept" => "application/json",
+            "Uplugin-Request" => 1, 
+            "X-Signature" => $token
         ];
+        
         $gatewayUrl = $apiUrl. ltrim($endpoint,'/');
         $client = $this->clientFactory->create();
         $client->setHeaders($headers);
