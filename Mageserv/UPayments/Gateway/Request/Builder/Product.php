@@ -45,8 +45,8 @@ class Product implements BuilderInterface
             $name = $orderItem->getName() ?? "";
             $desc = $desc ?? $orderItem->getName();
             $products[] = [
-                'name' => substr($name, 0, 255),
-                'description' => substr($desc, 0, 255),
+                'name' => mb_substr($name, 0, 255, 'UTF-8'),
+                'description' => mb_substr($desc, 0, 255, 'UTF-8'),
                 'price' => (float) $orderItem->getBaseRowTotalInclTax(),
                 'quantity' => intval($orderItem->getQtyOrdered())
             ];
